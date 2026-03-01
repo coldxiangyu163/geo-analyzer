@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "geo-analyzer"
+version = "0.1.0"
+description = "Check your website's visibility in AI search engines (ChatGPT, Perplexity, Gemini)"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [{name = "coldxiangyu"}]
+keywords = ["GEO", "SEO", "AI search", "generative engine optimization"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Internet :: WWW/HTTP",
+]
+dependencies = [
+    "click>=8.0",
+    "rich>=13.0",
+    "httpx>=0.24",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-asyncio"]
+
+[project.scripts]
+geo-analyzer = "geo_analyzer.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

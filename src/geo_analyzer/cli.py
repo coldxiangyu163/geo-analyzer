@@ -6,6 +6,7 @@ from rich.console import Console
 from geo_analyzer import __version__
 from geo_analyzer.config import load_config
 from geo_analyzer.scanner import scan
+from geo_analyzer.advisor import generate_advice
 from geo_analyzer.reporter import print_report, export_json
 
 console = Console()
@@ -18,12 +19,13 @@ def main():
     pass
 
 
-@main.command()
+@main.command("scan")
 @click.argument("url")
 @click.option("-k", "--keywords", required=True, help="Comma-separated keywords to check")
 @click.option("-e", "--engines", default=None, help="Engines to use: chatgpt,perplexity,gemini (default: all)")
 @click.option("-o", "--output", type=click.Choice(["table", "json"]), default="table", help="Output format")
-def scan_cmd(url: str, keywords: str, engines: str | None, output: str):
+@click.option("--advice/--no-advice", default=True, help="Show optimization suggestions (default: on)")
+def scan_cmd(url: str, keywords: str, engines: str | None, output: str, advice: bool):
     """Scan a URL's visibility across AI search engines.
     
     Example:
@@ -45,10 +47,12 @@ def scan_cmd(url: str, keywords: str, engines: str | None, output: str):
     with console.status("[bold blue]Scanning AI search engines..."):
         report = asyncio.run(scan(url, keyword_list, config, engine_list))
 
+    advice_list = generate_advice(report) if advice else None
+
     if output == "json":
-        click.echo(export_json(report))
+        click.echo(export_json(report, advice_list))
     else:
-        print_report(report)
+        print_report(report, advice_list)
 
 
 @main.command()

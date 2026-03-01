@@ -1,16 +1,17 @@
-"""Report output — Rich terminal tables and JSON export."""
+"""Report output — Rich terminal tables, advice, and JSON export."""
 import json
 from rich.console import Console
 from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 from geo_analyzer.scorer import ScanReport
+from geo_analyzer.advisor import Advice
 
 
 console = Console()
 
 
-def print_report(report: ScanReport) -> None:
+def print_report(report: ScanReport, advice_list: list[Advice] | None = None) -> None:
     """Print a beautiful terminal report."""
     # Header
     grade_colors = {"A": "green", "B": "blue", "C": "yellow", "D": "red", "F": "red bold"}
@@ -63,10 +64,21 @@ def print_report(report: ScanReport) -> None:
         console.print(f"\n📊 Summary: Mentioned in {mentioned_count}/{len(configured)} queries, "
                       f"Cited in {cited_count}/{len(configured)} queries")
 
+    # Optimization advice
+    if advice_list:
+        console.print("\n")
+        console.print(Panel("💡 [bold]Optimization Suggestions[/bold]", border_style="yellow"))
+        for adv in advice_list:
+            priority_label = f"[{'red' if adv.priority == 'high' else 'yellow' if adv.priority == 'medium' else 'green'}]{adv.priority.upper()}[/]"
+            console.print(f"\n  {adv.priority_icon} [{priority_label}] [bold]{adv.title}[/bold]")
+            console.print(f"     {adv.description}")
+            for item in adv.action_items:
+                console.print(f"     → {item}")
+
     console.print()
 
 
-def export_json(report: ScanReport) -> str:
+def export_json(report: ScanReport, advice_list: list[Advice] | None = None) -> str:
     """Export report as JSON string."""
     data = {
         "url": report.url,
@@ -86,4 +98,15 @@ def export_json(report: ScanReport) -> str:
             for s in report.engine_scores
         ],
     }
+    if advice_list:
+        data["advice"] = [
+            {
+                "priority": a.priority,
+                "category": a.category,
+                "title": a.title,
+                "description": a.description,
+                "action_items": a.action_items,
+            }
+            for a in advice_list
+        ]
     return json.dumps(data, indent=2)

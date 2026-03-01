@@ -10,6 +10,7 @@ async def scan(
     keywords: list[str],
     config: Config,
     engine_names: list[str] | None = None,
+    save_history: bool = True,
 ) -> ScanReport:
     """Run a full GEO scan across all configured engines.
     
@@ -72,4 +73,14 @@ async def scan(
     results = await asyncio.gather(*tasks)
     all_scores.extend(results)
 
-    return ScanReport(url=url, keywords=keywords, engine_scores=all_scores)
+    report = ScanReport(url=url, keywords=keywords, engine_scores=all_scores)
+
+    # Auto-save to SQLite history
+    if save_history:
+        try:
+            from geo_analyzer.storage import save_scan
+            save_scan(report)
+        except Exception:
+            pass  # Don't fail the scan if storage fails
+
+    return report

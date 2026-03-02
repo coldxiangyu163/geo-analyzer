@@ -570,35 +570,3 @@ def print_batch_report(batch_report) -> None:
 
     console.print()
 
-
-def export_batch_json(batch_report) -> str:
-    """Export batch report as JSON string.
-
-    Args:
-        batch_report: BatchReport object from batch.py
-    """
-    data = {
-        "urls": batch_report.urls,
-        "keywords": batch_report.keywords,
-        "matrix": {
-            url: {kw: round(score, 1) for kw, score in kw_scores.items()}
-            for url, kw_scores in batch_report.matrix.items()
-        },
-        "url_averages": {
-            url: round(batch_report.get_url_avg(url), 1)
-            for url in batch_report.urls
-        },
-        "keyword_averages": {
-            kw: round(batch_report.get_keyword_avg(kw), 1)
-            for kw in batch_report.keywords
-        },
-        "entries": [
-            {
-                "url": entry.url,
-                "avg_score": entry.avg_score,
-                "grade": entry.grade,
-            }
-            for entry in batch_report.entries
-        ],
-    }
-    return json.dumps(data, indent=2)

@@ -1,5 +1,10 @@
 # 🔍 GEO Analyzer
 
+[![PyPI version](https://img.shields.io/pypi/v/geo-analyzer)](https://pypi.org/project/geo-analyzer/)
+[![Python](https://img.shields.io/pypi/pyversions/geo-analyzer)](https://pypi.org/project/geo-analyzer/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Tests](https://img.shields.io/github/actions/workflow/status/coldxiangyu163/geo-analyzer/test.yml?label=tests)](https://github.com/coldxiangyu163/geo-analyzer/actions)
+
 **Check your website's visibility in AI search engines.**
 
 GEO (Generative Engine Optimization) is the next evolution of SEO — optimizing your content so AI search engines (ChatGPT, Perplexity, Gemini) can discover and cite your website.
@@ -57,6 +62,17 @@ geo-analyzer scan <url> -k "keyword" -e chatgpt,perplexity
 # JSON output
 geo-analyzer scan <url> -k "keyword" -o json
 
+# Compare two competing URLs
+geo-analyzer compare <url1> <url2> -k "keyword1, keyword2"
+
+# View scan history & trends
+geo-analyzer history <url>
+geo-analyzer history <url> -k "keyword" --trend
+
+# Batch scan: multi-URL × multi-keyword matrix
+geo-analyzer batch -u "url1,url2" -k "kw1,kw2"
+geo-analyzer batch -f urls.txt -k "kw1,kw2" -o json
+
 # Check which engines are configured
 geo-analyzer engines
 ```
@@ -86,9 +102,10 @@ Each query is scored 0-100:
 
 - [x] CLI skeleton + scoring algorithm
 - [x] ChatGPT, Perplexity, Gemini engine adapters
-- [ ] GEO optimization suggestions
-- [ ] Competitor comparison (`geo-analyzer compare`)
-- [ ] Historical tracking (`geo-analyzer history`)
+- [x] GEO optimization suggestions
+- [x] Competitor comparison (`geo-analyzer compare`)
+- [x] Historical tracking (`geo-analyzer history`)
+- [x] Batch scanning (`geo-analyzer batch`)
 - [ ] MCP Server integration
 - [ ] Web dashboard
 

@@ -331,3 +331,274 @@ def export_comparison_json(comparison: ComparisonReport) -> str:
         "disadvantages": comparison.disadvantages,
     }
     return json.dumps(data, indent=2)
+
+
+# ── Batch / Matrix Reports ──────────────────────────────────────────
+
+
+def _score_to_grade(score: float) -> str:
+    """Convert numeric score to letter grade."""
+    if score >= 80:
+        return "A"
+    elif score >= 60:
+        return "B"
+    elif score >= 40:
+        return "C"
+    elif score >= 20:
+        return "D"
+    else:
+        return "F"
+
+
+def _grade_style(grade: str) -> str:
+    """Return Rich style string for a grade (color-coded)."""
+    return {
+        "A": "bold green",
+        "B": "green",
+        "C": "yellow",
+        "D": "rgb(255,165,0)",   # orange
+        "F": "bold red",
+    }.get(grade, "white")
+
+
+def print_batch_report(batch_report) -> None:
+    """Print a URL × Keyword matrix table with color-coded grades.
+
+    Args:
+        batch_report: BatchReport from batch.py
+    """
+    from geo_analyzer.batch import BatchReport  # avoid circular at module level
+
+    header = Text()
+    header.append("📋 Batch Scan Results", style="bold")
+    header.append(f"  ({len(batch_report.urls)} URLs × {len(batch_report.keywords)} keywords)", style="dim")
+    console.print(Panel(header, border_style="blue"))
+    console.print()
+
+    # Build matrix table: rows = URLs, columns = keywords + avg
+    table = Table(show_header=True, header_style="bold magenta", title="URL × Keyword Score Matrix")
+    table.add_column("URL", style="cyan", min_width=20, max_width=40, no_wrap=True)
+
+    for kw in batch_report.keywords:
+        table.add_column(kw, justify="center", min_width=8)
+
+    table.add_column("Avg", justify="center", min_width=8, style="bold")
+    table.add_column("Grade", justify="center", min_width=7, style="bold")
+
+    for url in batch_report.urls:
+        row_cells: list[str] = []
+        # Truncate URL for display
+        display_url = url if len(url) <= 38 else url[:35] + "..."
+        row_cells.append(display_url)
+
+        for kw in batch_report.keywords:
+            score = batch_report.matrix.get(url, {}).get(kw, 0.0)
+            grade = _score_to_grade(score)
+            style = _grade_style(grade)
+            row_cells.append(f"[{style}]{int(score)} ({grade})[/{style}]")
+
+        avg = batch_report.get_url_avg(url)
+        avg_grade = _score_to_grade(avg)
+        avg_style = _grade_style(avg_grade)
+        row_cells.append(f"[{avg_style}]{avg:.0f}[/{avg_style}]")
+        row_cells.append(f"[{avg_style}]{avg_grade}[/{avg_style}]")
+
+        table.add_row(*row_cells)
+
+    # Keyword average footer row
+    footer_cells: list[str] = ["[bold]Keyword Avg[/bold]"]
+    for kw in batch_report.keywords:
+        kw_avg = batch_report.get_keyword_avg(kw)
+        kw_grade = _score_to_grade(kw_avg)
+        kw_style = _grade_style(kw_grade)
+        footer_cells.append(f"[{kw_style}]{kw_avg:.0f}[/{kw_style}]")
+    # Overall average
+    all_scores = [
+        batch_report.matrix.get(u, {}).get(k, 0.0)
+        for u in batch_report.urls
+        for k in batch_report.keywords
+    ]
+    overall = sum(all_scores) / len(all_scores) if all_scores else 0.0
+    o_grade = _score_to_grade(overall)
+    o_style = _grade_style(o_grade)
+    footer_cells.append(f"[{o_style}]{overall:.0f}[/{o_style}]")
+    footer_cells.append(f"[{o_style}]{o_grade}[/{o_style}]")
+    table.add_row(*footer_cells, end_section=True)
+
+    console.print(table)
+
+    # Legend
+    console.print("\n  [bold]Grade Legend:[/bold]  "
+                  "[bold green]A[/bold green]≥80  "
+                  "[green]B[/green]≥60  "
+                  "[yellow]C[/yellow]≥40  "
+                  "[rgb(255,165,0)]D[/rgb(255,165,0)]≥20  "
+                  "[bold red]F[/bold red]<20")
+    console.print()
+
+
+def export_batch_json(batch_report) -> str:
+    """Export batch report as JSON string.
+
+    Args:
+        batch_report: BatchReport from batch.py
+
+    Returns:
+        Pretty-printed JSON string
+    """
+    data = {
+        "urls": batch_report.urls,
+        "keywords": batch_report.keywords,
+        "matrix": {},
+        "url_averages": {},
+        "keyword_averages": {},
+    }
+
+    for url in batch_report.urls:
+        data["matrix"][url] = {}
+        for kw in batch_report.keywords:
+            score = batch_report.matrix.get(url, {}).get(kw, 0.0)
+            data["matrix"][url][kw] = {
+                "score": round(score, 1),
+                "grade": _score_to_grade(score),
+            }
+        avg = batch_report.get_url_avg(url)
+        data["url_averages"][url] = {
+            "score": round(avg, 1),
+            "grade": _score_to_grade(avg),
+        }
+
+    for kw in batch_report.keywords:
+        kw_avg = batch_report.get_keyword_avg(kw)
+        data["keyword_averages"][kw] = {
+            "score": round(kw_avg, 1),
+            "grade": _score_to_grade(kw_avg),
+        }
+
+    return json.dumps(data, indent=2)
+
+
+def _score_to_grade(score: float) -> str:
+    """Convert a numeric score to a letter grade."""
+    if score >= 80:
+        return "A"
+    elif score >= 60:
+        return "B"
+    elif score >= 40:
+        return "C"
+    elif score >= 20:
+        return "D"
+    else:
+        return "F"
+
+
+def _grade_style(grade: str) -> str:
+    """Return Rich style string for a grade."""
+    styles = {"A": "green", "B": "blue", "C": "yellow", "D": "red", "F": "red bold"}
+    return styles.get(grade, "white")
+
+
+def _score_cell(score: float) -> str:
+    """Format a score as a colored cell with grade."""
+    grade = _score_to_grade(score)
+    style = _grade_style(grade)
+    return f"[{style}]{score:.0f} ({grade})[/{style}]"
+
+
+def print_batch_report(batch_report) -> None:
+    """Print a batch scan matrix report.
+
+    Args:
+        batch_report: BatchReport object from batch.py
+    """
+    from geo_analyzer.batch import BatchReport
+
+    # Header
+    header = Text()
+    header.append("📊 GEO Batch Scan Report", style="bold")
+    header.append(f"  ({len(batch_report.urls)} URLs × {len(batch_report.keywords)} keywords)", style="dim")
+    console.print(Panel(header, border_style="blue"))
+
+    console.print(f"\n📝 Keywords: {', '.join(batch_report.keywords)}\n")
+
+    # Matrix table: URL × Keyword
+    table = Table(show_header=True, header_style="bold magenta", title="URL × Keyword Visibility Matrix")
+    table.add_column("URL", style="cyan", width=35, no_wrap=True)
+
+    for kw in batch_report.keywords:
+        table.add_column(kw, justify="center", width=14)
+
+    table.add_column("Avg", justify="center", width=10, style="bold")
+
+    for url in batch_report.urls:
+        row = [url if len(url) <= 35 else url[:32] + "..."]
+        for kw in batch_report.keywords:
+            score = batch_report.matrix.get(url, {}).get(kw, 0.0)
+            row.append(_score_cell(score))
+        # URL average
+        avg = batch_report.get_url_avg(url)
+        row.append(_score_cell(avg))
+        table.add_row(*row)
+
+    # Keyword averages footer row
+    footer_row = ["[bold]Avg by Keyword[/bold]"]
+    for kw in batch_report.keywords:
+        avg = batch_report.get_keyword_avg(kw)
+        footer_row.append(_score_cell(avg))
+    # Overall average
+    all_scores = [
+        batch_report.matrix[url][kw]
+        for url in batch_report.urls
+        if url in batch_report.matrix
+        for kw in batch_report.keywords
+        if kw in batch_report.matrix.get(url, {})
+    ]
+    overall_avg = sum(all_scores) / len(all_scores) if all_scores else 0
+    footer_row.append(_score_cell(overall_avg))
+    table.add_row(*footer_row)
+
+    console.print(table)
+
+    # Per-URL summary
+    console.print("\n📋 [bold]Per-URL Summary:[/bold]\n")
+    for entry in batch_report.entries:
+        grade = entry.grade
+        style = _grade_style(grade)
+        console.print(
+            f"  [{style}]{grade}[/{style}] {entry.avg_score:3d}/100  [cyan]{entry.url}[/cyan]"
+        )
+
+    console.print()
+
+
+def export_batch_json(batch_report) -> str:
+    """Export batch report as JSON string.
+
+    Args:
+        batch_report: BatchReport object from batch.py
+    """
+    data = {
+        "urls": batch_report.urls,
+        "keywords": batch_report.keywords,
+        "matrix": {
+            url: {kw: round(score, 1) for kw, score in kw_scores.items()}
+            for url, kw_scores in batch_report.matrix.items()
+        },
+        "url_averages": {
+            url: round(batch_report.get_url_avg(url), 1)
+            for url in batch_report.urls
+        },
+        "keyword_averages": {
+            kw: round(batch_report.get_keyword_avg(kw), 1)
+            for kw in batch_report.keywords
+        },
+        "entries": [
+            {
+                "url": entry.url,
+                "avg_score": entry.avg_score,
+                "grade": entry.grade,
+            }
+            for entry in batch_report.entries
+        ],
+    }
+    return json.dumps(data, indent=2)

@@ -4,19 +4,25 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "geo-analyzer"
-version = "0.1.0"
+version = "0.2.0"
 description = "Check your website's visibility in AI search engines (ChatGPT, Perplexity, Gemini)"
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.9"
-authors = [{name = "coldxiangyu"}]
-keywords = ["GEO", "SEO", "AI search", "generative engine optimization"]
+requires-python = ">=3.11"
+authors = [{name = "coldxiangyu", email = "coldxiangyu@gmail.com"}]
+keywords = ["GEO", "SEO", "AI search", "generative engine optimization", "ChatGPT", "Perplexity", "Gemini"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Internet :: WWW/HTTP :: Site Management",
+    "Typing :: Typed",
 ]
 dependencies = [
     "click>=8.0",
@@ -25,7 +31,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0", "pytest-asyncio"]
+dev = ["pytest>=7.0", "pytest-asyncio", "build", "twine"]
+
+[project.urls]
+Homepage = "https://github.com/coldxiangyu163/geo-analyzer"
+Repository = "https://github.com/coldxiangyu163/geo-analyzer"
+Issues = "https://github.com/coldxiangyu163/geo-analyzer/issues"
+Changelog = "https://github.com/coldxiangyu163/geo-analyzer/blob/main/CHANGELOG.md"
 
 [project.scripts]
 geo-analyzer = "geo_analyzer.cli:main"

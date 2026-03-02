@@ -7,7 +7,11 @@ from geo_analyzer import __version__
 from geo_analyzer.config import load_config
 from geo_analyzer.scanner import scan
 from geo_analyzer.advisor import generate_advice
-from geo_analyzer.reporter import print_report, export_json, print_comparison_report, export_comparison_json
+from geo_analyzer.reporter import (
+    print_report, export_json,
+    print_comparison_report, export_comparison_json,
+    print_batch_report, export_batch_json,
+)
 from geo_analyzer.comparator import compare_urls
 
 console = Console()
@@ -140,6 +144,154 @@ def history_cmd(url: str, keyword: str | None, limit: int, trend: bool):
             console.print("Run a scan first: geo-analyzer scan <url> -k <keywords>")
             return
         print_history(records, url)
+
+
+@main.command("batch")
+@click.option("-u", "--urls", default=None, help="Comma-separated URLs to scan")
+@click.option("-f", "--file", "url_file", default=None, help="File with URLs (one per line)")
+@click.option("-k", "--keywords", required=True, help="Comma-separated keywords to check")
+@click.option("-e", "--engines", default=None, help="Engines to use: chatgpt,perplexity,gemini (default: all)")
+@click.option("-c", "--concurrency", default=3, help="Max concurrent URL scans (default: 3)")
+@click.option("-o", "--output", type=click.Choice(["table", "json"]), default="table", help="Output format")
+def batch_cmd(urls: str | None, url_file: str | None, keywords: str, engines: str | None, concurrency: int, output: str):
+    """Batch scan multiple URLs across multiple keywords.
+
+    Produces a URL × Keyword visibility matrix.
+
+    Examples:
+        geo-analyzer batch -u "https://a.com,https://b.com" -k "kw1,kw2"
+        geo-analyzer batch -f urls.txt -k "kw1,kw2"
+        geo-analyzer batch -u "https://a.com" -k "kw1,kw2" -o json
+    """
+    from geo_analyzer.batch import batch_scan, load_urls_from_file
+
+    # Parse URLs
+    url_list = []
+    if urls:
+        url_list.extend([u.strip() for u in urls.split(",") if u.strip()])
+    if url_file:
+        try:
+            url_list.extend(load_urls_from_file(url_file))
+        except FileNotFoundError as e:
+            console.print(f"[red]❌ {e}[/red]")
+            raise SystemExit(1)
+
+    if not url_list:
+        console.print("[red]❌ No URLs provided. Use --urls or --file.[/red]")
+        raise SystemExit(1)
+
+    keyword_list = [k.strip() for k in keywords.split(",") if k.strip()]
+    if not keyword_list:
+        console.print("[red]❌ No keywords provided.[/red]")
+        raise SystemExit(1)
+
+    engine_list = [e.strip() for e in engines.split(",")] if engines else None
+
+    config = load_config()
+    available = config.get_available_engines()
+
+    if not available:
+        console.print("[yellow]⚠️  No API keys configured. Running in demo mode.[/yellow]")
+
+    total_scans = len(url_list) * len(keyword_list)
+    console.print(f"\n🔍 [bold]Batch Scan[/bold]: {len(url_list)} URLs × {len(keyword_list)} keywords = {total_scans} scan tasks\n")
+
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Scanning...", total=len(url_list))
+
+        def on_progress(url, done, total):
+            progress.update(task, completed=done, description=f"Scanned: {url[:40]}")
+
+        batch_report = asyncio.run(
+            batch_scan(url_list, keyword_list, config, engine_list, concurrency, on_progress)
+        )
+
+    if output == "json":
+        click.echo(export_batch_json(batch_report))
+    else:
+        print_batch_report(batch_report)
+
+
+@main.command("batch")
+@click.option("-u", "--urls", default=None, help="Comma-separated URLs to scan")
+@click.option("-f", "--file", "url_file", default=None, help="File with URLs (one per line)")
+@click.option("-k", "--keywords", required=True, help="Comma-separated keywords to check")
+@click.option("-e", "--engines", default=None, help="Engines to use: chatgpt,perplexity,gemini (default: all)")
+@click.option("-c", "--concurrency", default=3, help="Max concurrent URL scans (default: 3)")
+@click.option("-o", "--output", type=click.Choice(["table", "json"]), default="table", help="Output format")
+def batch_cmd(urls: str | None, url_file: str | None, keywords: str, engines: str | None, concurrency: int, output: str):
+    """Batch scan multiple URLs across multiple keywords.
+
+    Produces a URL × Keyword visibility matrix.
+
+    Examples:\n
+        geo-analyzer batch -u "https://a.com,https://b.com" -k "kw1,kw2"\n
+        geo-analyzer batch -f urls.txt -k "kw1,kw2"\n
+        geo-analyzer batch -u "https://a.com" -k "kw1" -o json
+    """
+    from geo_analyzer.batch import batch_scan, load_urls_from_file
+
+    # Parse URLs
+    url_list = []
+    if urls:
+        url_list.extend([u.strip() for u in urls.split(",") if u.strip()])
+    if url_file:
+        try:
+            url_list.extend(load_urls_from_file(url_file))
+        except FileNotFoundError as e:
+            console.print(f"[red]❌ {e}[/red]")
+            raise SystemExit(1)
+
+    if not url_list:
+        console.print("[red]❌ No URLs provided. Use --urls or --file.[/red]")
+        raise SystemExit(1)
+
+    keyword_list = [k.strip() for k in keywords.split(",") if k.strip()]
+    if not keyword_list:
+        console.print("[red]❌ No keywords provided.[/red]")
+        raise SystemExit(1)
+
+    engine_list = [e.strip() for e in engines.split(",")] if engines else None
+
+    config = load_config()
+    available = config.get_available_engines()
+
+    if not available:
+        console.print("[yellow]⚠️  No API keys configured. Running in demo mode.[/yellow]")
+
+    total_scans = len(url_list) * len(keyword_list)
+    console.print(f"\n🔍 [bold]Batch Scan[/bold]: {len(url_list)} URLs × {len(keyword_list)} keywords = {total_scans} scan tasks\n")
+
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Scanning...", total=len(url_list))
+
+        def on_progress(url, done, total):
+            progress.update(task, completed=done, description=f"Scanned: {url[:40]}")
+
+        batch_report = asyncio.run(
+            batch_scan(url_list, keyword_list, config, engine_list, concurrency, on_progress)
+        )
+
+    if output == "json":
+        click.echo(export_batch_json(batch_report))
+    else:
+        print_batch_report(batch_report)
 
 
 if __name__ == "__main__":

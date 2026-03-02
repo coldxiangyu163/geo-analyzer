@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![License](https://img.shields.io/github/license/coldxiangyu163/geo-analyzer)
-![Tests](https://img.shields.io/badge/tests-65%20passed-brightgreen)
+[![CI](https://github.com/coldxiangyu163/geo-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/coldxiangyu163/geo-analyzer/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/geo-analyzer)](https://pypi.org/project/geo-analyzer/)
 
 **Check your website's visibility in AI search engines.**

@@ -3,7 +3,6 @@
 ![Python](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![License](https://img.shields.io/github/license/coldxiangyu163/geo-analyzer)
 [![CI](https://github.com/coldxiangyu163/geo-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/coldxiangyu163/geo-analyzer/actions/workflows/ci.yml)
-[![PyPI version](https://img.shields.io/pypi/v/geo-analyzer)](https://pypi.org/project/geo-analyzer/)
 
 **Check your website's visibility in AI search engines.**
 
@@ -33,10 +32,37 @@ Here's why traditional SEO falls short in the AI era:
 
 **The problem**: You can rank #1 on Google but be completely invisible to ChatGPT. GEO Analyzer tells you exactly where you stand in AI search — and how to improve.
 
+## Installation
+
+> GEO Analyzer is currently **GitHub-first**. PyPI publishing is paused for now.
+
+### Option 1 — pipx (recommended)
+
+```bash
+pipx install git+https://github.com/coldxiangyu163/geo-analyzer.git
+```
+
+This installs `geo-analyzer` as an isolated CLI and is the easiest way to use it globally.
+
+### Option 2 — pip from GitHub
+
+```bash
+pip install git+https://github.com/coldxiangyu163/geo-analyzer.git
+```
+
+### Option 3 — clone and install locally
+
+```bash
+git clone https://github.com/coldxiangyu163/geo-analyzer.git
+cd geo-analyzer
+pip install -e .
+```
+
 ## Quick Start
 
 ```bash
-pip install geo-analyzer
+# Install from GitHub
+pipx install git+https://github.com/coldxiangyu163/geo-analyzer.git
 
 # Set at least one API key
 export OPENAI_API_KEY=sk-...
